@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import validator from 'validator';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -32,13 +33,28 @@ const userSchema = new mongoose.Schema({
   }
 });
 
+userSchema.methods.createPasswordResetToken = function() {
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+    
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+  
+  return resetToken; // Return unhashed token for email
+};
+
+
 userSchema.methods.correctPassword = async function(
   candidatePassword, 
   userPassword
 ) {
-    return await bcrypt.compare(candidatePassword, userPassword);
-  };
+  return await bcrypt.compare(candidatePassword, userPassword);
+};
 
+// Password hashing middleware
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);

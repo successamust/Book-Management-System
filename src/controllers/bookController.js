@@ -49,6 +49,8 @@ export const getAllBooks = catchAsync(async (req, res) => {
   });
 });
 
+
+ //getting a book 
 export const getBook = catchAsync(async (req, res, next) => {
   const book = await Book.findById(req.params.id)
     .populate('borrower', 'name email') // shows who borrowed it
