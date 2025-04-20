@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect, restrictTo } from '../middlewares/auth.js';
-import { getUser, getAllUsers, updateUser, changePassword } from '../controllers/userController.js';
+import { getUser, getAllUsers, updateUser, changePassword, deleteUser } from '../controllers/userController.js';
 
 const router = express.Router();
 
@@ -13,6 +13,7 @@ router.patch('/change-password', changePassword);
  // Regular user can access/update their own profile
 router.get('/:id', getUser); 
 router.patch('/:id', updateUser);
+router.delete('/:id', protect, deleteUser);
 
 // Admin-only routes
 router.use(restrictTo('admin'));

@@ -138,3 +138,48 @@ export const changePassword = catchAsync(async (req, res, next) => {
       }
     });
   });
+
+
+// Delete user (admin can delete anyone, users can delete themselves)
+export const deleteUser = catchAsync(async (req, res, next) => {
+    const userIdToDelete = req.params.id;
+    const currentUser = req.user; // From protect middleware
+  
+    // 1) Prevent deleting if user has active book borrowings
+    const activeBorrowings = await BorrowRecord.exists({ 
+      user: userIdToDelete, 
+      status: 'active' 
+    });
+  
+    if (activeBorrowings) {
+      return next(new AppError('User has active book borrowings', 400));
+    }
+  
+    // 2) Authorization check
+    if (
+      currentUser.role !== 'admin' && 
+      userIdToDelete !== currentUser._id.toString()
+    ) {
+      return next(new AppError('You can only delete your own account!', 403));
+    }
+  
+    // 3) Soft delete (set active: false instead of removing)
+    const user = await User.findByIdAndUpdate(
+      userIdToDelete,
+      { active: false },
+      { new: true }
+    );
+  
+    if (!user) {
+      return next(new AppError('No user found with that ID', 404));
+    }
+
+    if (req.query.hardDelete === 'true' && currentUser.role === 'admin') {
+        await User.findByIdAndDelete(userIdToDelete);
+    }
+  
+    res.status(204).json({
+      status: 'success',
+      data: null
+    });
+  });

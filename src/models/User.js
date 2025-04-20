@@ -30,8 +30,14 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  active: {
+    type: Boolean,
+    default: true,
+    select: false // Hide from queries by default
   }
-});
+})
+
 
 userSchema.methods.createPasswordResetToken = function() {
   const resetToken = crypto.randomBytes(32).toString('hex');
