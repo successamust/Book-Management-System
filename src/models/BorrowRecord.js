@@ -5,6 +5,7 @@ const borrowRecordSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Book',
     required: [true, 'A borrow record must reference a book']
+
   },
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -22,11 +23,17 @@ const borrowRecordSchema = new mongoose.Schema({
     enum: ['borrowed', 'returned', 'overdue'],
     default: 'borrowed'
   },
+
   fineAmount: {
     type: Number,
     default: 0
-  }
-});
+  },
+  
+},
+    {
+        timeStamps: true  
+    }
+);
 
 const BorrowRecord = mongoose.model('BorrowRecord', borrowRecordSchema);
 export default BorrowRecord;

@@ -105,3 +105,40 @@ export const returnBook = catchAsync(async (req, res, next) => {
       }
     });
   });
+
+
+//Getting users borrowing history
+export const getBorrowHistory = catchAsync(async (req, res, next) => {
+    const userId = req.user.id;
+  
+    const borrowHistory = await BorrowRecord.find({ user: userId })
+      .populate('book', 'title author ISBN') // Include essential book details
+      .sort('-borrowDate'); // Newest first
+  
+    res.status(200).json({
+      status: 'success',
+      results: borrowHistory.length,
+      data: {
+        borrowHistory
+      }
+    });
+  });
+
+
+//Listing all overdue books
+export const getOverdueBooks = catchAsync(async (req, res, next) => {
+    const overdueRecords = await BorrowRecord.find({
+      status: 'borrowed',
+      dueDate: { $lt: new Date() } // Due date is in the past
+    })
+      .populate('book', 'title author')
+      .populate('user', 'name email'); // Include borrower details
+  
+    res.status(200).json({
+      status: 'success',
+      results: overdueRecords.length,
+      data: {
+        overdueRecords
+      }
+    });
+  });

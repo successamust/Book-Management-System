@@ -1,5 +1,5 @@
 import express from 'express';
-import { borrowBook, returnBook, getActiveBorrows } from '../controllers/borrowController.js';
+import { borrowBook, returnBook, getActiveBorrows, getBorrowHistory, getOverdueBooks } from '../controllers/borrowController.js';
 import { restrictTo } from '../middlewares/auth.js';
 
 const router = express.Router();
@@ -8,6 +8,8 @@ const router = express.Router();
 router.post('/:bookId', restrictTo('user'), borrowBook);
 router.post('/return/:bookId', restrictTo('user'), returnBook);
 router.get('/active', restrictTo('user'), getActiveBorrows);
+router.get('/history', restrictTo('user'), getBorrowHistory);
+router.get('/overdue', restrictTo('admin'), getOverdueBooks);
 
 export default router;
 
