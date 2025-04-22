@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import bookRoutes from './routes/bookRoutes.js';
+import borrowRouter from './routes/borrowRoutes.js';
 import { protect, restrictTo } from './middlewares/auth.js';
 import globalErrorHandler from './controllers/errorController.js';
 
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use(protect)
 app.use('/api/users', restrictTo('admin'), userRoutes);
 app.use('/api/books', bookRoutes);
+app.use('/api/borrow', borrowRouter);
 
 // 404 Handler
 // app.all('*', (req, res, next) => {
