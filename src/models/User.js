@@ -3,108 +3,97 @@ import validator from 'validator';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
-/**
- * User Schema:
- * Defines the structure for user accounts in the system
- * Includes authentication fields and account management properties
- */
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Name is required'],
-    trim: true  // Removes whitespace from both ends
+    trim: true
   },
   email: {
     type: String,
     required: [true, 'Email is required'],
-    unique: true,  // Ensures no duplicate emails
-    lowercase: true,  // Converts to lowercase before saving
-    validate: [validator.isEmail, 'Invalid email']  // Email format validation
+    unique: true,
+    lowercase: true,
+    validate: [validator.isEmail, 'Invalid email']
   },
   password: {
     type: String,
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters'],
-    select: false  // Never returned in query results by default
+    select: false
   },
   role: {
     type: String,
-    enum: ['user', 'admin'],  // Only these roles allowed
-    default: 'user'  // New users get 'user' role by default
+    enum: ['user', 'admin'],
+    default: 'user'
   },
   createdAt: {
     type: Date,
-    default: Date.now  // Automatically set to current date
+    default: Date.now
   },
   active: {
     type: Boolean,
-    default: true,  // Accounts are active by default
-    select: false  // Hidden from query results by default
+    default: true,
+    select: false
   },
   passwordResetToken: {
     type: String,
-    select: false  // Hide from queries
+    select: false
   },
   passwordResetExpires: {
     type: Date,
-    select: false  // Hide from queries
+    select: false
   }
 }, { 
   timestamps: true 
 });
 
-
-/**
- * Generates a password reset token
- * - Creates cryptographically secure token
- * - Stores hashed version in database
- * - Sets 10-minute expiration
- * @returns {string} Unhashed token for email
- */
+// Password reset token generation
 userSchema.methods.createPasswordResetToken = function() {
   const resetToken = crypto.randomBytes(32).toString('hex');
   
-  // Store hashed version in database
   this.passwordResetToken = crypto
     .createHash('sha256')
     .update(resetToken)
     .digest('hex');
     
-  // Set expiration to 10 minutes from now
   this.passwordResetExpires = Date.now() + 20 * 60 * 1000;
   
-  return resetToken; // Return unhashed version for email
+  return resetToken;
 };
 
-userSchema.index({ passwordResetToken: 1 });
-userSchema.index({ passwordResetExpires: 1 });
-
-/**
- * Compares candidate password with stored password
- * @param {string} candidatePassword - Password to check
- * @param {string} userPassword - Hashed password from database
- * @returns {Promise<boolean>} True if passwords match
- */
-userSchema.methods.correctPassword = async function(
-  candidatePassword, 
-  userPassword
-) {
+// Password comparison method
+userSchema.methods.correctPassword = async function(candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-/**
- * Password hashing middleware
- * Automatically hashes password before saving if modified
- */
-userSchema.pre('save', async function(next) {
-  // Only hash if password was modified
-  if (!this.isModified('password')) return next();
+// New secure password setter
+userSchema.methods.setPassword = async function(newPassword) {
+  // Password validation
+  if (newPassword.length < 8) {
+    throw new Error('Password must be at least 8 characters');
+  }
+
+  // Hash and save new password
+  this.password = await bcrypt.hash(newPassword, 12);
   
-  // Hash password with cost factor of 12
+  // Clear any existing reset tokens
+  this.passwordResetToken = undefined;
+  this.passwordResetExpires = undefined;
+  
+  await this.save();
+};
+
+// Password hashing middleware
+userSchema.pre('save', async function(next) {
+  if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
-// Create and export the User model
+// Indexes
+userSchema.index({ passwordResetToken: 1 });
+userSchema.index({ passwordResetExpires: 1 });
+
 const User = mongoose.model('User', userSchema);
 export default User;

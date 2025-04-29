@@ -157,8 +157,7 @@ export const changePassword = catchAsync(async (req, res, next) => {
   }
 
   // 6. Update password
-  user.password = normNew;
-  await user.save();
+  await user.setPassword(req.body.newPassword);
 
    // Helper function to generate a new JWT token
   const signToken = (id) => {
