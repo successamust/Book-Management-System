@@ -25,6 +25,14 @@ app.use((req, res, next) => {
   next();
 });
 
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Book Management API is running',
+    documentation: 'https://documenter.getpostman.com/view/43469598/2sB2j3BBWA'
+  });
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
