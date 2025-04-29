@@ -13,7 +13,7 @@ router.patch('/change-password', changePassword);
  // Regular user can access/update their own profile
 router.get('/:id', getUser); 
 router.patch('/:id', updateUser);
-router.delete('/:id', protect, deleteUser);
+router.delete('/:id', deleteUser);
 
 // Admin-only routes
 router.use(restrictTo('admin'));

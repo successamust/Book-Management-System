@@ -6,11 +6,13 @@ import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import bookRoutes from './routes/bookRoutes.js';
 import borrowRouter from './routes/borrowRoutes.js';
-import { protect, restrictTo } from './middlewares/auth.js';
 import globalErrorHandler from './controllers/errorController.js';
+import setupCronJobs from './utils/cron.js';
+import fineRouter from './routes/fineRoutes.js';
 
 dotenv.config();
 connectDB();
+setupCronJobs();
 
 const app = express();
 
@@ -25,15 +27,10 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use(protect)
-app.use('/api/users', restrictTo('admin'), userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/borrow', borrowRouter);
-
-// 404 Handler
-// app.all('*', (req, res, next) => {
-//   next(new AppError(`Not found: ${req.originalUrl}`, 404));
-// });
+app.use('/api/fines', fineRouter);
 
 // Global Error Handler
 app.use(globalErrorHandler);

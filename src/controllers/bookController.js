@@ -3,124 +3,142 @@ import catchAsync from '../utils/catchAsync.js';
 import APIFeatures from '../utils/apiFeatures.js';
 import AppError from '../utils/AppError.js';
 
-
-//adding new books
+/**
+ * @desc    Add a new book to the library.
+ * @route   POST /api/books
+ * @access  Private (Admin only)
+ */
 export const createBook = catchAsync(async (req, res, next) => {
-  const { title, author, ISBN, quantity } = req.body;
+    const { title, author, ISBN, quantity } = req.body;
 
-  // Check if ISBN already exists
-  const existingBook = await Book.findOne({ ISBN });
-  if (existingBook) {
-    return next(new AppError('Book with this ISBN already exists', 400));
-  }
-
-  const newBook = await Book.create({
-    title,
-    author,
-    ISBN,
-    quantity
-  });
-
-  res.status(201).json({
-    status: 'success',
-    data: {
-      book: newBook
+    if (!title || !author || !ISBN || quantity === undefined) {
+        return next(new AppError('Please provide title, author, ISBN, and quantity.', 400));
     }
-  });
+
+    const existingBook = await Book.findOne({ ISBN });
+    if (existingBook) {
+        return next(new AppError('A book with this ISBN already exists.', 400));
+    }
+
+    const newBook = await Book.create({
+        title,
+        author,
+        ISBN,
+        quantity,
+        available: quantity // Initialize available copies
+    });
+
+    res.status(201).json({
+        status: 'success',
+        data: {
+            book: newBook
+        }
+    });
 });
 
-
- //Getting all books
+/**
+ * @desc    Get all books, with optional filtering, sorting, limiting, and pagination.
+ * @route   GET /api/books
+ * @access  Public
+ */
 export const getAllBooks = catchAsync(async (req, res) => {
-  // 1) Build query
-  const features = new APIFeatures(Book.find(), req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate();
+    const features = new APIFeatures(Book.find(), req.query)
+        .filter()
+        .sort()
+        .limitFields()
+        .paginate();
 
-  // 2) Execute query
-  const books = await features.query;
+    const books = await features.query;
 
-  res.status(200).json({
-    status: 'success',
-    results: books.length,
-    data: {
-      books
-    }
-  });
+    res.status(200).json({
+        status: 'success',
+        results: books.length,
+        data: {
+            books
+        }
+    });
 });
 
-
- //getting a book 
+/**
+ * @desc    Get a single book by its ID.
+ * @route   GET /api/books/:id
+ * @access  Public
+ */
 export const getBook = catchAsync(async (req, res, next) => {
-  const book = await Book.findById(req.params.id)
-    .populate('borrower', 'name email') // shows who borrowed it
-    .select('-__v'); // Exclude version key
+    const book = await Book.findById(req.params.id)
+        .populate({
+            path: 'borrower',
+            select: 'name email' // Select specific fields from the borrower
+        })
+        .select('-__v'); // Exclude the version key
 
-  if (!book) {
-    return next(new AppError('No book found with that ID', 404));
-  }
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      book
+    if (!book) {
+        return next(new AppError('No book found with the provided ID.', 404));
     }
-  });
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            book
+        }
+    });
 });
 
- // Update a book (admin-only) - NOW USING PATCH
+/**
+ * @desc    Update an existing book's details (admin-only). Uses PATCH for partial updates.
+ * @route   PATCH /api/books/:id
+ * @access  Private (Admin only)
+ */
 export const updateBook = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
-  const { title, author, ISBN, quantity } = req.body;
+    const { id } = req.params;
+    const { title, author, ISBN, quantity } = req.body;
 
-  // Validate at least one field is provided
-  if (!title && !author && !ISBN && !quantity) {
-    return next(new AppError('At least one field (title, author, ISBN, or quantity) must be updated', 400));
-  }
-
-  // Find the book first to calculate available copies
-  const book = await Book.findById(id);
-  if (!book) {
-    return next(new AppError('No book found with that ID', 404));
-  }
-
-  // Apply partial updates
-  if (title) book.title = title;
-  if (author) book.author = author;
-  if (ISBN) book.ISBN = ISBN;
-  if (quantity !== undefined) {
-    book.available += quantity - book.quantity; // Adjust available copies
-    book.quantity = quantity;
-  }
-
-  // Save with validation
-  const updatedBook = await book.save();
-
-  res.status(200).json({
-    status: 'success',
-    data: {
-      book: updatedBook
+    if (!title && !author && !ISBN && quantity === undefined) {
+        return next(new AppError('At least one field (title, author, ISBN, or quantity) must be provided for update.', 400));
     }
-  });
+
+    const book = await Book.findById(id);
+    if (!book) {
+        return next(new AppError('No book found with the provided ID.', 404));
+    }
+
+    // Calculate the change in quantity to adjust available copies
+    if (quantity !== undefined && quantity !== book.quantity) {
+        book.available += quantity - book.quantity;
+    }
+
+    // Apply updates
+    if (title) book.title = title;
+    if (author) book.author = author;
+    if (ISBN) book.ISBN = ISBN;
+    if (quantity !== undefined) book.quantity = quantity;
+
+    const updatedBook = await book.save();
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            book: updatedBook
+        }
+    });
 });
 
-
-// Delete a book (admin-only)
+/**
+ * @desc    Delete a book from the library (admin-only).
+ * @route   DELETE /api/books/:id
+ * @access  Private (Admin only)
+ */
 export const deleteBook = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
+    const { id } = req.params;
 
-  // 1) Check if the book exists and delete it
-  const book = await Book.findByIdAndDelete(id);
+    const book = await Book.findByIdAndDelete(id);
 
-  if (!book) {
-    return next(new AppError('No book found with that ID', 404));
-  }
+    if (!book) {
+        return next(new AppError('No book found with the provided ID.', 404));
+    }
 
-  // 2) Success response (no content)
-  res.status(204).json({
-    status: 'success',
-    data: null
-  });
+    res.status(204).json({
+        status: 'success',
+        data: null // 204 No Content responses typically have no body
+    });
 });

@@ -5,6 +5,7 @@ import { forgotPassword, resetPassword } from '../controllers/authController.js'
 
 const router = express.Router();
 
+
 router.post('/register', register);
 router.post('/register-admin', protect, restrictTo('admin'), registerAdmin); // Admin-only
 router.post('/login', login);
