@@ -85,7 +85,7 @@ A RESTful API for managing books, users, borrowing operations, and fines in a li
    # Run the server
    npm start
 
-   
+
 ## Data Models
 
 ### User
@@ -143,6 +143,6 @@ Contributions are welcome! Please open an issue or submit a pull request.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Thank you.
 ```
 
