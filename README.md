@@ -1,6 +1,3 @@
-Here's an enhanced **README.md** that incorporates your live deployment and Postman documentation links, making it more comprehensive for users and contributors:
-
-```markdown
 # Book Management API
 
 ![API Status](https://img.shields.io/badge/status-live-brightgreen) 
@@ -87,8 +84,8 @@ A RESTful API for managing books, users, borrowing operations, and fines in a li
 
    # Run the server
    npm start
-   ```
 
+   
 ## Data Models
 
 ### User
